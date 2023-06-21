@@ -6,9 +6,20 @@ from KBKI import KBKI
 class KBKIDecoder:
     __KBKI = KBKI()
 
-    def __init__(self, filename):
-        self.filename = filename
-        self.__readKBKI(filename)
+    # restruct constructor to 2 modes:
+    # filename - if 1 variable is passed to constructor 
+    # use then read non-compress file
+    # decompossive - if 3 variable is passed to constructor 
+    # use then passed 3 parametrs after decomress file
+    def __init__(self, type, arg1 = '', arg2 = '', arg3 = ''):
+        if type == 'filename':
+            self.filename = arg1
+            self.__readKBKI(self.filename)
+        if type == 'decompossive':
+            self.__KBKI.__imageHeight = int(arg1)
+            self.__KBKI.__imageWidth = int(arg2)
+            self.__KBKI.palette = arg3
+        
 
     #read uncompression file and write pixels code in colnsole
     # so ignore filter byte! 
