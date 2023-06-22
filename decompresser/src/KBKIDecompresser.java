@@ -13,11 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-enum ColorTypes {
-    RGB,
-    RGBA
-}
-
 public class KBKIDecompresser implements FileDecompresser {
     private int imageHeight;
     private int imageWidth;
@@ -109,8 +104,9 @@ public class KBKIDecompresser implements FileDecompresser {
                     continue;
                 }
                 // here I read and decompress current pixel
-                Random random = new Random();
-                byte colorComponent = ((byte) (random.nextInt(0, 256)));
+                byte[] temp = new byte[1];
+                new Random().nextBytes(temp);
+                byte colorComponent = temp[0];
 
                 // but from decompressed info
                 decompressedResult.add("00000000");
