@@ -1,3 +1,5 @@
+package com.kbki.decompressor;
+
 public class DecompressingFailedException extends Exception {
     String message;
 

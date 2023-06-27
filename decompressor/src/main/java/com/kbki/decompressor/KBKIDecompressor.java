@@ -1,125 +1,121 @@
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.*;
+package com.kbki.decompressor;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
-import java.util.Random;
+public class KBKIDecompressor {
 
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+    private KBKI kbki = new KBKI();
+    private String sourceFileName;
+    private String resultFileName;
 
-public class KBKIDecompresser implements FileDecompresser {
-    private int imageHeight;
-    private int imageWidth;
+    // modes for decoding executions
+    private boolean show = false;
+    private boolean write = false;
 
-    /** Представляет собой массив байтов, каждые n из которых образуют один пиксель, где n - число цветовых компонент */
-    private byte[] pixels;
-
-    ColorModel colorModel;
-    int numberOfComponents;
-
-    @Override
-    public void decompressToFile(String sourceFileName, String resultFileName) {
-        // I'm decompress your sourceFile and write result to resultFile
+    public KBKIDecompressor setSourceFileName(String sourceFileName) {
+        this.sourceFileName = sourceFileName;
+        return this;
     }
 
-    @Override
-    public void decompressAndShowImage(String sourceFileName) throws DecompressingFailedException {
-        // decompress file and get necessary info
-        try (FileInputStream file = new FileInputStream(sourceFileName)) {
-            /** Decompressing file and getting info */
-            decompress(file);
-            /** saving image */
-            saveToImage();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public KBKIDecompressor setResultFileName(String resultFileName) {
+        this.resultFileName = resultFileName;
+        return this;
+    }
+
+    public KBKIDecompressor readMetadata() throws IOException{
+        FileInputStream fileInputStream = new FileInputStream(sourceFileName);
+        byte[] buffer = fileInputStream.readNBytes(13);
+        byte size = 0;
+        byte[] key = new byte[0];
+
+        // if encryption has, then read key
+        int encryptionType = (int)buffer[12];
+
+        if (encryptionType != 0) {
+            size = fileInputStream.readNBytes(1)[0];
+
+            // if encryption has key with length > 0
+            if (size > 0) {
+                key = fileInputStream.readNBytes((int) size);
+            }
         }
+
+        kbki.setMetadata(buffer, size, key);
+
+        return this;
     }
 
-    private void saveToImage() throws IOException {
-        DataBuffer buffer = new DataBufferByte(pixels, imageHeight * imageWidth);
-
-        // Хз для чего нужно, но нужно(
-        int[] bandOffsets = new int[numberOfComponents];
-        Arrays.setAll(bandOffsets, i -> i++);
-
-        //3 bytes per pixel: red, green, blue
-        WritableRaster raster = Raster.createInterleavedRaster(buffer, imageWidth, imageHeight, numberOfComponents * imageWidth, numberOfComponents, bandOffsets, null);
-        ColorModel cm = new ComponentColorModel(colorModel.getColorSpace(), false, colorModel.isAlphaPremultiplied(), Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-        BufferedImage image = new BufferedImage(cm, raster, true, null);
-
-        ImageIO.write(image, "png", new File("image.png"));
+    public KBKIDecompressor addShow() {
+        this.show = true;
+        return this;
     }
 
-    @Override
-    public ArrayList<String> decompress(FileInputStream fileInputStream) throws DecompressingFailedException, IOException {
-        // here i'm decompressing file and got meta info for example:
-        byte[] height = fileInputStream.readNBytes(32);
-        String width = "0000000000000000011110111100";
-        String filter = "00000000";
-        String colorType = "00000000";
-        String mask = "00000000";
-        String compressionType = "00000000";
+    public KBKIDecompressor addWrite() {
+        this.write = true;
+        return this;
+    }
 
-        // Getting color type:
-        switch (Integer.parseInt(colorType)) {
+    public void decompress() throws DecompressingFailedException {
+        // if any mode hasn't set
+        if (!(this.show || this.write)) {
+            return;
+        }
+
+        switch (kbki.getCompressionType()) {
             case 0 -> {
-                colorModel = ColorModel.getRGBdefault();
-                numberOfComponents = 3;
+                break;
             }
-            case 1 -> {
-                // хз как
-                numberOfComponents = 4;
-            }
-            default -> {
-                throw new DecompressingFailedException("Invalid color type in file");
+            case (byte) 130 -> {
+                // Deflate
+                deflateDecompress();
+                break;
             }
         }
+    }
 
-        // push all meta info to ArrayList
-        //ArrayList<String> decompressedResult = Stream.of(height, width).collect(Collectors.toCollection(ArrayList::new));
+    // count bytes of metadata
+    private long getSkipLength() {
+        long skip = 13;
 
-        // and now I start to read and decompress colors (pixels):
-        imageHeight = 2;
-        imageWidth = Integer.parseInt(width, 2);
-
-        if (imageHeight == 0 && imageWidth == 0) {
-            System.err.println();
-            throw new DecompressingFailedException("Invalid size of image in file");
+        if (kbki.getEncryptionType() != 0) {
+            skip += 1;
+            skip += kbki.getEncryptionKeyLength();
         }
 
-        // Initialize pixels array
-        pixels = new byte[imageWidth * numberOfComponents * imageHeight];
+        return skip;
+    }
 
-        for (int y = 0; y < imageHeight; y++) {
-            String lineFilter;
-            for (int x = 0; x < imageWidth * 3 + 1; x++) {
-                if (x % (imageWidth * 3 + 1) == 0) {
-                    // but from file
-                    lineFilter = "00000000";
-                    //decompressedResult.add(lineFilter);
-                    continue;
-                }
-                // here I read and decompress current pixel
-                byte[] temp = new byte[1];
-                new Random().nextBytes(temp);
-                byte colorComponent = temp[0];
+    private void deflateDecompress() {
+        // TODO make divide input and output
+        // TODO set compression type byte to 0
+        try(
+            FileInputStream reader = new FileInputStream(sourceFileName);
+            FileOutputStream writer = new FileOutputStream(resultFileName);
+            InflaterInputStream inflate = new InflaterInputStream(reader)
+                ) {
 
-                // but from decompressed info
-                //decompressedResult.add("00000000");
+            byte[] buffer;
+            int len;
 
-                pixels[x - 1 + y * (imageWidth * 3)] = colorComponent;
+            buffer = inflate.readNBytes((int) this.getSkipLength());
+            writer.write(buffer);
+
+            buffer = new byte[1024];
+
+            while ((len = reader.read(buffer)) > 0) {
+                writer.write(buffer, 0, len);
             }
-        }
 
-        //return decompressedResult;
-        return null;
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

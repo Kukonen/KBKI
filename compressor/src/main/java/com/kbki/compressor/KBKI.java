@@ -1,4 +1,4 @@
-package com.kbki.decompressor;
+package com.kbki.compressor;
 
 public class KBKI {
     private byte version;
