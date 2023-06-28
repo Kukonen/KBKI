@@ -57,7 +57,7 @@ public class KBKI {
         this.height += ((bytes[3] & 0xFF) << 8);
         this.height += ((bytes[4] & 0xFF));
 
-        this.width = bytes[0];
+        this.width = 0;
         this.width += ((bytes[5] & 0xFF) << 8 * 3);
         this.width += ((bytes[6] & 0xFF) << 8 * 2);
         this.width += ((bytes[7] & 0xFF) << 8);
@@ -68,12 +68,7 @@ public class KBKI {
         this.compressionType = bytes[11];
         this.encryptionType = bytes[12];
         this.encryptionKeyLength = encryptionKeyLength;
-
-        // entry encryption key
-        this.encryptionKey = new byte[bytes.length - 13];
-        for (int i = 14, j = 0; i < bytes.length; ++i, ++j) {
-            this.encryptionKey[j] = bytes[i];
-        }
+        this.encryptionKey = encryptionKey;
     }
 
     // no recommended use. typical use convert byte after byte
@@ -101,5 +96,13 @@ public class KBKI {
 
     public byte getEncryptionKeyLength() {
         return encryptionKeyLength;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public int getWidth() {
+        return width;
     }
 }

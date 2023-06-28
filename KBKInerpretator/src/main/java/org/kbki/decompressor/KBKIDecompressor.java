@@ -2,10 +2,14 @@ package org.kbki.decompressor;
 
 import org.kbki.utils.KBKI;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.*;
+import java.io.*;
+import java.util.Arrays;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 public class KBKIDecompressor {
@@ -85,7 +89,7 @@ public class KBKIDecompressor {
 
         if (kbki.getEncryptionType() != 0) {
             skip += 1;
-            skip += kbki.getEncryptionKeyLength();
+            skip += (int) kbki.getEncryptionKeyLength();
         }
 
         return skip;
@@ -99,17 +103,27 @@ public class KBKIDecompressor {
                 FileOutputStream writer = new FileOutputStream(resultFileName);
                 InflaterInputStream inflate = new InflaterInputStream(reader)
         ) {
+//            byte[] buffer;
+//            int len;
+//
+//            buffer = reader.readNBytes((int) this.getSkipLength());
+//            writer.write(buffer);
+//
+//            buffer = new byte[1024];
+//
+//            while ((len = reader.read(buffer)) > 0) {
+//                writer.write(buffer, 0, len);
+//            }
 
-            byte[] buffer;
-            int len;
-
-            buffer = inflate.readNBytes((int) this.getSkipLength());
+            byte[] buffer = new byte[13];
+            inflate.read(buffer);
             writer.write(buffer);
 
+            // Decompress the rest of the file
             buffer = new byte[1024];
-
-            while ((len = reader.read(buffer)) > 0) {
-                writer.write(buffer, 0, len);
+            int bytesRead;
+            while ((bytesRead = inflate.read(buffer)) > 0) {
+                writer.write(buffer, 0, bytesRead);
             }
 
         } catch (FileNotFoundException e) {

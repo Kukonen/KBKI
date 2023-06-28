@@ -5,6 +5,7 @@ import org.kbki.utils.KBKI;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 public class KBKICompressor {
@@ -73,21 +74,37 @@ public class KBKICompressor {
                 FileOutputStream writer = new FileOutputStream(resultFileName);
                 DeflaterOutputStream deflate = new DeflaterOutputStream(writer)
         ) {
-            byte[] buffer;
+//            byte[] buffer;
+//
+//            buffer = reader.readNBytes(11);
+//            writer.write(buffer);
+//
+//            reader.skip(1);
+//            writer.write( (byte) 130);
+//
+//            buffer = reader.readNBytes(1);
+//            writer.write(buffer);
+//
+//            buffer = reader.readNBytes((int) (this.getSkipLength() - 13));
+//            writer.write(buffer);
+////
+//            buffer = new byte[1024];
+//            int len;
+//            while ((len = reader.read(buffer)) > 0) {
+//                deflate.write(buffer, 0, len);
+//            }
+//
+//            deflate.finish();
 
-            buffer = reader.readNBytes(11);
-            writer.write(buffer);
+            byte[] buffer = new byte[13];
+            reader.read(buffer);
+            deflate.write(buffer);
 
-            reader.skip(1);
-            writer.write( (byte) 130);
-
-            buffer = reader.readNBytes((int) (this.getSkipLength() - 13));
-            writer.write(buffer);
-
+            // Compress the rest of the file
             buffer = new byte[1024];
-            int len;
-            while ((len = reader.read(buffer)) > 0) {
-                deflate.write(buffer, 0, len);
+            int bytesRead;
+            while ((bytesRead = reader.read(buffer)) > 0) {
+                deflate.write(buffer, 0, bytesRead);
             }
 
             deflate.finish();
