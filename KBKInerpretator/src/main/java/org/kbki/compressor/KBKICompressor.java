@@ -1,5 +1,6 @@
 package org.kbki.compressor;
 
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
 import org.kbki.utils.KBKI;
 
 import java.io.*;
@@ -70,45 +71,17 @@ public class KBKICompressor {
 
     public void deflateCompress() {
         try(
-                FileInputStream reader = new FileInputStream(sourceFileName);
-                FileOutputStream writer = new FileOutputStream(resultFileName);
-                DeflaterOutputStream deflate = new DeflaterOutputStream(writer)
+                FileInputStream inputStream = new FileInputStream(sourceFileName);
+                FileOutputStream outputStream = new FileOutputStream(resultFileName);
+                DeflateCompressorOutputStream compressor = new DeflateCompressorOutputStream(outputStream)
         ) {
-//            byte[] buffer;
-//
-//            buffer = reader.readNBytes(11);
-//            writer.write(buffer);
-//
-//            reader.skip(1);
-//            writer.write( (byte) 130);
-//
-//            buffer = reader.readNBytes(1);
-//            writer.write(buffer);
-//
-//            buffer = reader.readNBytes((int) (this.getSkipLength() - 13));
-//            writer.write(buffer);
-////
-//            buffer = new byte[1024];
-//            int len;
-//            while ((len = reader.read(buffer)) > 0) {
-//                deflate.write(buffer, 0, len);
-//            }
-//
-//            deflate.finish();
-
-            byte[] buffer = new byte[13];
-            reader.read(buffer);
-            deflate.write(buffer);
-
-            // Compress the rest of the file
-            buffer = new byte[1024];
+            byte[] buffer = new byte[1024];
             int bytesRead;
-            while ((bytesRead = reader.read(buffer)) > 0) {
-                deflate.write(buffer, 0, bytesRead);
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                compressor.write(buffer, 0, bytesRead);
             }
 
-            deflate.finish();
-
+            compressor.finish();
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {

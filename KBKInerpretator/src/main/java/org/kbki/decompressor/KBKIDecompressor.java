@@ -1,5 +1,6 @@
 package org.kbki.decompressor;
 
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
 import org.kbki.utils.KBKI;
 
 import javax.imageio.ImageIO;
@@ -81,6 +82,7 @@ public class KBKIDecompressor {
                 break;
             }
         }
+        deflateDecompress();
     }
 
     // count bytes of metadata
@@ -99,31 +101,14 @@ public class KBKIDecompressor {
         // TODO make divide input and output
         // TODO set compression type byte to 0
         try(
-                FileInputStream reader = new FileInputStream(sourceFileName);
-                FileOutputStream writer = new FileOutputStream(resultFileName);
-                InflaterInputStream inflate = new InflaterInputStream(reader)
+                FileInputStream inputStream = new FileInputStream(sourceFileName);
+                FileOutputStream outputStream = new FileOutputStream(resultFileName);
+                DeflateCompressorInputStream decompressor = new DeflateCompressorInputStream(inputStream)
         ) {
-//            byte[] buffer;
-//            int len;
-//
-//            buffer = reader.readNBytes((int) this.getSkipLength());
-//            writer.write(buffer);
-//
-//            buffer = new byte[1024];
-//
-//            while ((len = reader.read(buffer)) > 0) {
-//                writer.write(buffer, 0, len);
-//            }
-
-            byte[] buffer = new byte[13];
-            inflate.read(buffer);
-            writer.write(buffer);
-
-            // Decompress the rest of the file
-            buffer = new byte[1024];
+            byte[] buffer = new byte[1024];
             int bytesRead;
-            while ((bytesRead = inflate.read(buffer)) > 0) {
-                writer.write(buffer, 0, bytesRead);
+            while ((bytesRead = decompressor.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
             }
 
         } catch (FileNotFoundException e) {

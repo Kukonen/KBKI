@@ -14,11 +14,15 @@ public class Main {
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
 //        }
+        String origin = "C:/Users/evgen/OneDrive/Рабочий стол/projects/KBKI/Билеты по ЭВМ [forked].pdf";
+        String compress = "C:/Users/evgen/OneDrive/Рабочий стол/projects/KBKI/Билеты по ЭВМ [forked] in.pdf";
+        String decompress = "C:/Users/evgen/OneDrive/Рабочий стол/projects/KBKI/Билеты по ЭВМ [forked] out.pdf";
+
         KBKIDecompressor decompressor = new KBKIDecompressor();
         KBKICompressor compressor = new KBKICompressor();
         try {
             compressor
-                    .setSourceFileName(original)
+                    .setSourceFileName(origin)
                     .setResultFileName(compress)
                     .readMetadata()
                     .compress()
