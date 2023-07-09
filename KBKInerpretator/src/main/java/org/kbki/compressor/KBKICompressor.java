@@ -65,7 +65,7 @@ public class KBKICompressor {
         // TODO create exception
         // if compression is already exist, we don't use compression
         if(kbki.getCompressionType() != 0) {
-            return null;
+            return this;
         }
 
         switch (mode) {

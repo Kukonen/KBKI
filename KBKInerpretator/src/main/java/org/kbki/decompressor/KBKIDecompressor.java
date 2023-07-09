@@ -69,10 +69,10 @@ public class KBKIDecompressor {
         return this;
     }
 
-    public void decompress() {
+    public KBKIDecompressor decompress() {
         // if any mode hasn't set
         if (!(this.show || this.write)) {
-            return;
+            return this;
         }
 
         switch (kbki.getCompressionType()) {
@@ -90,6 +90,8 @@ public class KBKIDecompressor {
                 break;
             }
         }
+
+        return this;
     }
 
     // count bytes of metadata
