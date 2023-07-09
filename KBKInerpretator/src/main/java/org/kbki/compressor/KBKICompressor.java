@@ -15,6 +15,8 @@ public class KBKICompressor {
     private String sourceFileName;
     private String resultFileName;
 
+    private byte mode;
+
     public KBKICompressor setSourceFileName(String sourceFileName) {
         this.sourceFileName = sourceFileName;
         return this;
@@ -66,10 +68,36 @@ public class KBKICompressor {
             return null;
         }
 
+        switch (mode) {
+            case 0 -> {
+                break;
+            }
+            case (byte) 129 -> {
+                // Deflate
+                LZWCompress();
+                break;
+            }
+            case (byte) 130 -> {
+                // Deflate
+                deflateCompress();
+                break;
+            }
+        }
+
         return this;
     }
 
-    public void deflateCompress() {
+    public KBKICompressor deflate() {
+        mode = (byte) 130;
+        return this;
+    }
+
+    public KBKICompressor LZW() {
+        mode = (byte) 129;
+        return this;
+    }
+
+    private void deflateCompress() {
         try(
                 FileInputStream inputStream = new FileInputStream(sourceFileName);
                 FileOutputStream outputStream = new FileOutputStream(resultFileName);
@@ -77,6 +105,11 @@ public class KBKICompressor {
         ) {
             byte[] buffer = new byte[1024];
             int bytesRead;
+
+            bytesRead = inputStream.readNBytes(buffer, 0, (int) this.getSkipLength());
+            buffer[11] = (byte) 130;
+            outputStream.write(buffer, 0, bytesRead);
+
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 compressor.write(buffer, 0, bytesRead);
             }
@@ -91,12 +124,17 @@ public class KBKICompressor {
 
     // src - source file, dst - new compressed file
     // filename - name of new file
-    public static void LZW(String src, String dst) {
-
+    private void LZWCompress() {
         try(
-                BufferedReader reader = new BufferedReader(new FileReader(src));
-                BufferedWriter writer = new BufferedWriter(new FileWriter(dst))
+                BufferedReader reader = new BufferedReader(new FileReader(sourceFileName));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName))
         ) {
+            char[] buffer = new char[1024];
+
+            reader.read(buffer, 0, (int) this.getSkipLength());
+            buffer[11] = (char) ((byte) 129);
+            writer.write(buffer);
+
             // filled dictionary, base use 8 bit length
             int dictionaryLength = 256;
             Map<String, Integer> dictionary = new HashMap<>();
@@ -131,48 +169,5 @@ public class KBKICompressor {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static void LZWdecode(String src, String dst) {
-
-        try(
-                BufferedReader reader = new BufferedReader(new FileReader(src));
-                BufferedWriter writer = new BufferedWriter(new FileWriter(dst))
-        ) {
-            // filled dictionary, base use 8 bit length
-            int dictionaryLength = 256;
-            Map<Integer, String> dictionary = new HashMap<>();
-            // append to dictionary codes of symbols
-            for (int i = 0; i < dictionaryLength; i++) {
-                dictionary.put(i, String.valueOf((char) i));
-            }
-
-            // bytes that's we read from file
-            int readablyBytes = reader.read();
-            // sequence of bytes
-            String bytes = String.valueOf((char) readablyBytes);
-            writer.write(dictionary.get(readablyBytes));
-
-            while (reader.ready()) {
-                readablyBytes = reader.read();
-                // bites, that's we write in file, when find relationship
-                // from dictionary
-                String writableBytes = dictionary.containsKey(readablyBytes)
-                        ? dictionary.get(readablyBytes)
-                        : bytes + bytes.charAt(0);
-
-                // write bytes in file
-                writer.write(writableBytes);
-
-                // add in dictionary new combinations
-                dictionary.put(dictionaryLength++, bytes + writableBytes.charAt(0));
-                bytes = writableBytes;
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
     }
 }
